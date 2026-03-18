@@ -9,11 +9,9 @@ from Crypto.Random import get_random_bytes
 # Setup logging
 logger = logging.getLogger(__name__)
 
-# AES key (32 bytes for AES-256)
-# In production, this should be stored securely, not hardcoded
-# For this example, we get it from environment or use a fixed development key
-# Using a fixed key ensures files can be decrypted across server restarts
-ENCRYPTION_KEY = os.environ.get('ENCRYPTION_KEY', 'my-secure-dev-key-12345-67890-abcdef')
+from django.conf import settings
+
+ENCRYPTION_KEY = settings.ENCRYPTION_KEY
 if isinstance(ENCRYPTION_KEY, str):
     # Ensure the key is exactly 32 bytes by hashing it
     from hashlib import sha256

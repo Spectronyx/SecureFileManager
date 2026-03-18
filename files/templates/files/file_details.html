@@ -13,7 +13,7 @@
                     {% endif %}
                     {{ file.original_filename }}
                 </h4>
-                <span class="badge {% if file.file_type in ['jpg', 'jpeg', 'png', 'gif'] %}bg-info{% elif file.file_type in ['pdf'] %}bg-danger{% elif file.file_type in ['doc', 'docx'] %}bg-primary{% elif file.file_type in ['xls', 'xlsx'] %}bg-success{% else %}bg-secondary{% endif %}">
+                <span class="badge {% if file.file_type in 'jpg,jpeg,png,gif' %}bg-info{% elif file.file_type == 'pdf' %}bg-danger{% elif file.file_type in 'doc,docx' %}bg-primary{% elif file.file_type in 'xls,xlsx' %}bg-success{% else %}bg-secondary{% endif %}">
                     {{ file.file_type }}
                 </span>
             </div>
@@ -31,7 +31,7 @@
                         <ul class="list-group">
                             <li class="list-group-item d-flex justify-content-between align-items-center">
                                 <span>Filename:</span>
-                                <span>{{ file.original_filename }}</span>
+                                <span class="text-truncate ps-2" style="max-width: 15rem;">{{ file.original_filename }}</span>
                             </li>
                             <li class="list-group-item d-flex justify-content-between align-items-center">
                                 <span>File Type:</span>
@@ -39,23 +39,17 @@
                             </li>
                             <li class="list-group-item d-flex justify-content-between align-items-center">
                                 <span>Size:</span>
-                                <span>
-                                    {% if file.file_size > 0 %}
-                                        {{ (file.file_size / 1024)|round(1) }} KB
-                                    {% else %}
-                                        0 KB
-                                    {% endif %}
-                                </span>
+                                <span>{{ file.file_size|filesizeformat }}</span>
                             </li>
                             <li class="list-group-item d-flex justify-content-between align-items-center">
                                 <span>Upload Date:</span>
-                                <span>{{ file.upload_date.strftime('%Y-%m-%d %H:%M:%S') }}</span>
+                                <span>{{ file.upload_date|date:'Y-m-d H:i:s' }}</span>
                             </li>
                             <li class="list-group-item d-flex justify-content-between align-items-center">
                                 <span>Last Accessed:</span>
                                 <span>
                                     {% if file.last_accessed %}
-                                        {{ file.last_accessed.strftime('%Y-%m-%d %H:%M:%S') }}
+                                        {{ file.last_accessed|date:'Y-m-d H:i:s' }}
                                     {% else %}
                                         Never
                                     {% endif %}
@@ -67,7 +61,7 @@
                                     {% if is_owner %}
                                         You
                                     {% else %}
-                                        {{ file.owner.username }}
+                                        {{ file.user.username }}
                                     {% endif %}
                                 </span>
                             </li>
@@ -94,8 +88,8 @@
                     <div class="col-md-6">
                         <h5><i class="bi bi-clock-history me-2"></i>Access History</h5>
                         <div class="list-group overflow-auto" style="max-height: 300px;">
-                            {% if file.access_logs|length > 0 %}
-                                {% for log in (file.access_logs|sort(attribute='timestamp', reverse=True))[:10] %}
+                            {% if file.access_logs.count > 0 %}
+                                {% for log in file.access_logs.all|dictsortreversed:"timestamp"|slice:":10" %}
                                     <div class="list-group-item">
                                         <div class="d-flex w-100 justify-content-between">
                                             <h6 class="mb-1">
@@ -112,9 +106,9 @@
                                                 {% else %}
                                                     <i class="bi bi-activity me-1"></i>
                                                 {% endif %}
-                                                {{ log.action|capitalize }}
+                                                {{ log.action|title }}
                                             </h6>
-                                            <small>{{ log.timestamp.strftime('%Y-%m-%d %H:%M') }}</small>
+                                            <small>{{ log.timestamp|date:'Y-m-d H:i' }}</small>
                                         </div>
                                         <p class="mb-1">By {{ log.user.username }}</p>
                                         <small>IP: {{ log.ip_address }}</small>
@@ -131,21 +125,17 @@
                 </div>
                 
                 <div class="d-flex mt-4 mb-2">
-                    <a href="{{ url_for('file_manager.dashboard') }}" class="btn btn-secondary me-2">
+                    <a href="{% url 'file_manager:dashboard' %}" class="btn btn-secondary me-2">
                         <i class="bi bi-arrow-left me-1"></i>Back
                     </a>
                     
                     {% if not file.is_malware_detected %}
-                    <a href="{{ url_for('file_manager.download_file', file_id=file.id) }}" class="btn btn-primary me-2">
+                    <a href="{% url 'file_manager:download_file' file.id %}" class="btn btn-primary me-2">
                         <i class="bi bi-download me-1"></i>Download
                     </a>
                     {% endif %}
                     
                     {% if is_owner %}
-                    <button type="button" class="btn btn-warning me-2" data-bs-toggle="modal" data-bs-target="#reuploadModal">
-                        <i class="bi bi-arrow-repeat me-1"></i>Re-upload
-                    </button>
-                    
                     <button type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#deleteModal">
                         <i class="bi bi-trash me-1"></i>Delete
                     </button>
@@ -162,27 +152,27 @@
                 <h5 class="mb-0"><i class="bi bi-share me-2"></i>Share File</h5>
             </div>
             <div class="card-body">
-                <form method="POST" action="{{ url_for('file_manager.share_file', file_id=file.id) }}">
-                    {{ share_form.hidden_tag() }}
+                <form method="POST" action="{% url 'file_manager:share_file' file.id %}">
+                    {% csrf_token %}
                     
                     <div class="mb-3">
-                        <label for="username" class="form-label">{{ share_form.username.label }}</label>
-                        {{ share_form.username(class="form-control", id="username", placeholder="Enter username") }}
+                        <label for="{{ share_form.username.id_for_label }}" class="form-label">{{ share_form.username.label }}</label>
+                        {{ share_form.username }}
                         {% for error in share_form.username.errors %}
                             <div class="text-danger">{{ error }}</div>
                         {% endfor %}
                     </div>
                     
                     <div class="mb-3">
-                        <label for="permissions" class="form-label">{{ share_form.permissions.label }}</label>
-                        {{ share_form.permissions(class="form-select", id="permissions") }}
+                        <label for="{{ share_form.permissions.id_for_label }}" class="form-label">{{ share_form.permissions.label }}</label>
+                        {{ share_form.permissions }}
                         {% for error in share_form.permissions.errors %}
                             <div class="text-danger">{{ error }}</div>
                         {% endfor %}
                     </div>
                     
                     <div class="d-grid">
-                        {{ share_form.submit(class="btn btn-primary") }}
+                        <button type="submit" class="btn btn-primary">Share</button>
                     </div>
                 </form>
             </div>
@@ -195,20 +185,17 @@
             </div>
             <div class="card-body p-0">
                 <ul class="list-group list-group-flush">
-                    {% for user, share in shared_with %}
+                    {% for share_user in shared_with %}
                     <li class="list-group-item">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
-                                <i class="bi bi-person-circle me-2"></i>{{ user.username }}
-                                <small class="d-block text-muted">{{ user.email }}</small>
-                                <span class="badge {% if share.permissions == 'read' %}bg-success{% else %}bg-warning{% endif %}">
-                                    {{ share.permissions|capitalize }}
-                                </span>
+                                <i class="bi bi-person-circle me-2"></i>{{ share_user.username }}
+                                <small class="d-block text-muted">{{ share_user.email }}</small>
                             </div>
-                            <form method="POST" action="{{ url_for('file_manager.unshare_file', file_id=file.id, user_id=user.id) }}">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <form method="POST" action="{% url 'file_manager:unshare_file' file.id share_user.id %}">
+                                {% csrf_token %}
                                 <button type="submit" class="btn btn-sm btn-danger" 
-                                        onclick="return confirm('Are you sure you want to revoke access for {{ user.username }}?')">
+                                        onclick="return confirm('Are you sure you want to revoke access for {{ share_user.username }}?')">
                                     <i class="bi bi-x-circle"></i>
                                 </button>
                             </form>
@@ -226,8 +213,8 @@
                 <h5 class="mb-0"><i class="bi bi-share me-2"></i>Shared Information</h5>
             </div>
             <div class="card-body">
-                <p><i class="bi bi-person-fill me-2"></i>Shared by: {{ file.owner.username }}</p>
-                <p><i class="bi bi-calendar-date me-2"></i>Shared on: {{ share.shared_date.strftime('%Y-%m-%d') }}</p>
+                <p><i class="bi bi-person-fill me-2"></i>Shared by: {{ file.user.username }}</p>
+                <p><i class="bi bi-calendar-date me-2"></i>Shared on: {{ share.shared_date|date:'Y-m-d' }}</p>
                 <div class="alert alert-info">
                     <i class="bi bi-shield-lock me-2"></i>
                     Your access permissions:
@@ -264,44 +251,10 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <form method="POST" action="{{ url_for('file_manager.delete_file', file_id=file.id) }}">
-                    {{ delete_form.hidden_tag() }}
-                    {{ delete_form.submit(class="btn btn-danger") }}
-                </form>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Re-upload Modal -->
-<div class="modal fade" id="reuploadModal" tabindex="-1" aria-labelledby="reuploadModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header bg-warning">
-                <h5 class="modal-title" id="reuploadModalLabel">Re-upload File</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body">
-                <p>Re-upload this file to fix encryption key issues:</p>
-                <p><strong>{{ file.original_filename }}</strong></p>
-                <div class="alert alert-info">
-                    <i class="bi bi-info-circle-fill me-2"></i>
-                    If you're having trouble downloading this file due to encryption key changes, you can re-upload it to make it accessible again.
-                </div>
-                <form method="POST" action="{{ url_for('file_manager.upload_file') }}" enctype="multipart/form-data">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                    <div class="mb-3">
-                        <label for="reupload-file" class="form-label">Select file to upload</label>
-                        <input type="file" class="form-control" id="reupload-file" name="file" required>
-                    </div>
-                    <div class="mb-3">
-                        <label for="reupload-notes" class="form-label">Notes (optional)</label>
-                        <textarea class="form-control" id="reupload-notes" name="notes" rows="2"></textarea>
-                    </div>
-                    <div class="modal-footer px-0 pb-0">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-warning">Re-upload File</button>
-                    </div>
+                <form method="POST" action="{% url 'file_manager:delete_file' file.id %}">
+                    {% csrf_token %}
+                    {{ delete_form.confirm }}
+                    <button type="submit" class="btn btn-danger">Delete</button>
                 </form>
             </div>
         </div>

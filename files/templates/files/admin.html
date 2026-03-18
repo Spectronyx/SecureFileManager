@@ -30,7 +30,7 @@
         <div class="card text-center">
             <div class="card-body">
                 <h5 class="card-title"><i class="bi bi-shield-fill-exclamation text-danger me-2"></i>Malware Detected</h5>
-                <p class="display-4">{{ files|selectattr('is_malware_detected', 'eq', true)|list|length }}</p>
+                <p class="display-4">{% for file in files %}{% if file.is_malware_detected %}1{% endif %}{% endfor %}</p> 
             </div>
         </div>
     </div>
@@ -56,26 +56,26 @@
                             </tr>
                         </thead>
                         <tbody>
-                            {% for user in users %}
+                            {% for user_obj in users %}
                             <tr>
-                                <td>{{ user.username }}</td>
-                                <td>{{ user.email }}</td>
+                                <td>{{ user_obj.username }}</td>
+                                <td>{{ user_obj.email }}</td>
                                 <td>
-                                    <span class="badge {% if user.role == 'admin' %}bg-danger{% else %}bg-primary{% endif %}">
-                                        {{ user.role }}
+                                    <span class="badge {% if user_obj.role == 'admin' %}bg-danger{% else %}bg-primary{% endif %}">
+                                        {{ user_obj.role|title }}
                                     </span>
                                 </td>
                                 <td>
-                                    {% if user.is_2fa_enabled %}
+                                    {% if user_obj.is_2fa_enabled %}
                                     <span class="badge bg-success">Enabled</span>
                                     {% else %}
                                     <span class="badge bg-secondary">Disabled</span>
                                     {% endif %}
                                 </td>
-                                <td>{{ user.created_at.strftime('%Y-%m-%d') }}</td>
+                                <td>{{ user_obj.date_joined|date:'Y-m-d' }}</td>
                                 <td>
-                                    {% if user.last_login %}
-                                    {{ user.last_login.strftime('%Y-%m-%d %H:%M') }}
+                                    {% if user_obj.last_login %}
+                                    {{ user_obj.last_login|date:'Y-m-d H:i' }}
                                     {% else %}
                                     Never
                                     {% endif %}
@@ -113,9 +113,9 @@
                                 {% else %}
                                     <i class="bi bi-activity me-1"></i>
                                 {% endif %}
-                                {{ log.action|capitalize }}
+                                {{ log.action|title }}
                             </h6>
-                            <small>{{ log.timestamp.strftime('%Y-%m-%d %H:%M') }}</small>
+                            <small>{{ log.timestamp|date:'Y-m-d H:i' }}</small>
                         </div>
                         <p class="mb-1">
                             User: <strong>{{ log.user.username }}</strong>
@@ -157,9 +157,9 @@
                             <tr>
                                 <td>{{ file.original_filename }}</td>
                                 <td>{{ file.file_type }}</td>
-                                <td>{{ (file.file_size / 1024)|round(1) }} KB</td>
-                                <td>{{ file.owner.username }}</td>
-                                <td>{{ file.upload_date.strftime('%Y-%m-%d %H:%M') }}</td>
+                                <td>{{ file.file_size|filesizeformat }}</td>
+                                <td>{{ file.user.username }}</td>
+                                <td>{{ file.upload_date|date:'Y-m-d H:i' }}</td>
                                 <td>
                                     {% if file.is_malware_detected %}
                                     <span class="badge bg-danger">Malware Detected</span>
@@ -168,7 +168,7 @@
                                     {% endif %}
                                 </td>
                                 <td>
-                                    <a href="{{ url_for('file_manager.file_details', file_id=file.id) }}" class="btn btn-sm btn-primary">
+                                    <a href="{% url 'file_manager:file_details' file.id %}" class="btn btn-sm btn-primary">
                                         <i class="bi bi-info-circle"></i>
                                     </a>
                                 </td>

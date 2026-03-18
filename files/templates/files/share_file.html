@@ -14,20 +14,20 @@
                     <p class="mb-0"><strong>Sharing:</strong> {{ file.original_filename }}</p>
                 </div>
                 
-                <form method="POST" action="{{ url_for('file_manager.share_file', file_id=file.id) }}">
-                    {{ form.hidden_tag() }}
+                <form method="POST" action="{% url 'file_manager:share_file' file.id %}">
+                    {% csrf_token %}
                     
                     <div class="mb-3">
-                        <label for="username" class="form-label">{{ form.username.label }}</label>
-                        {{ form.username(class="form-control", id="username", placeholder="Enter username") }}
+                        <label for="{{ form.username.id_for_label }}" class="form-label">{{ form.username.label }}</label>
+                        {{ form.username }}
                         {% for error in form.username.errors %}
                             <div class="text-danger">{{ error }}</div>
                         {% endfor %}
                     </div>
                     
                     <div class="mb-3">
-                        <label for="permissions" class="form-label">{{ form.permissions.label }}</label>
-                        {{ form.permissions(class="form-select", id="permissions") }}
+                        <label for="{{ form.permissions.id_for_label }}" class="form-label">{{ form.permissions.label }}</label>
+                        {{ form.permissions }}
                         {% for error in form.permissions.errors %}
                             <div class="text-danger">{{ error }}</div>
                         {% endfor %}
@@ -39,8 +39,8 @@
                     </div>
                     
                     <div class="d-grid gap-2">
-                        {{ form.submit(class="btn btn-primary") }}
-                        <a href="{{ url_for('file_manager.file_details', file_id=file.id) }}" class="btn btn-outline-secondary">Cancel</a>
+                        <button type="submit" class="btn btn-primary">Share</button>
+                        <a href="{% url 'file_manager:file_details' file.id %}" class="btn btn-outline-secondary">Cancel</a>
                     </div>
                 </form>
             </div>
@@ -53,18 +53,18 @@
             </div>
             <div class="card-body p-0">
                 <ul class="list-group list-group-flush">
-                    {% for user, share in shared_with %}
+                    {% for share_user, share in shared_with %}
                     <li class="list-group-item">
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
-                                <span class="fw-bold">{{ user.username }}</span>
-                                <small class="d-block text-muted">{{ user.email }}</small>
+                                <span class="fw-bold">{{ share_user.username }}</span>
+                                <small class="d-block text-muted">{{ share_user.email }}</small>
                                 <span class="badge {% if share.permissions == 'read' %}bg-success{% else %}bg-warning{% endif %}">
-                                    {{ share.permissions|capitalize }}
+                                    {{ share.permissions|title }}
                                 </span>
                             </div>
-                            <form method="POST" action="{{ url_for('file_manager.unshare_file', file_id=file.id, user_id=user.id) }}">
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <form method="POST" action="{% url 'file_manager:unshare_file' file.id share_user.id %}">
+                                {% csrf_token %}
                                 <button type="submit" class="btn btn-sm btn-danger">
                                     <i class="bi bi-x-circle"></i> Revoke
                                 </button>

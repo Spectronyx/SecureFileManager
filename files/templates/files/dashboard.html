@@ -8,7 +8,7 @@
         <h1 class="h3 mb-0">Your Files</h1>
     </div>
     <div class="col-auto">
-        <a href="{{ url_for('file_manager.upload_file') }}" class="btn btn-primary">
+        <a href="{% url 'file_manager:upload' %}" class="btn btn-primary">
             <i class="bi bi-upload me-1"></i>Upload New File
         </a>
     </div>
@@ -17,23 +17,23 @@
 <!-- Search form -->
 <div class="row mb-4">
     <div class="col-md-6 offset-md-3">
-        <form action="{{ url_for('file_manager.search') }}" method="GET" class="d-flex">
-            <input type="text" name="query" class="form-control me-2" placeholder="Search files..." value="{{ search_query|default('') }}">
+        <form action="{% url 'file_manager:search' %}" method="GET" class="d-flex">
+            <input type="text" name="query" class="form-control me-2" placeholder="Search files..." value="{{ search_query|default:'' }}">
             <button type="submit" class="btn btn-outline-primary"><i class="bi bi-search"></i></button>
         </form>
     </div>
 </div>
 
-{% if search_results is defined %}
+{% if search_results %}
     <div class="alert alert-info">
         <h5><i class="bi bi-search me-2"></i>Search Results</h5>
         <p>Showing results for: <strong>{{ search_query }}</strong></p>
-        <a href="{{ url_for('file_manager.dashboard') }}" class="btn btn-sm btn-outline-secondary">Clear search</a>
+        <a href="{% url 'file_manager:dashboard' %}" class="btn btn-sm btn-outline-secondary">Clear search</a>
     </div>
     
-    {% if search_results|length > 0 %}
+    {% if my_files|length > 0 %}
         <div class="row">
-            {% for file in search_results %}
+            {% for file in my_files %}
                 <div class="col-md-4 mb-4">
                     <div class="card h-100">
                         <div class="card-header d-flex justify-content-between align-items-center">
@@ -43,20 +43,20 @@
                                 {% endif %}
                                 {{ file.original_filename }}
                             </span>
-                            <span class="badge {% if file.file_type in ['jpg', 'jpeg', 'png', 'gif'] %}bg-info{% elif file.file_type in ['pdf'] %}bg-danger{% elif file.file_type in ['doc', 'docx'] %}bg-primary{% elif file.file_type in ['xls', 'xlsx'] %}bg-success{% else %}bg-secondary{% endif %}">
+                            <span class="badge {% if file.file_type in 'jpg,jpeg,png,gif' %}bg-info{% elif file.file_type == 'pdf' %}bg-danger{% elif file.file_type in 'doc,docx' %}bg-primary{% elif file.file_type in 'xls,xlsx' %}bg-success{% else %}bg-secondary{% endif %}">
                                 {{ file.file_type }}
                             </span>
                         </div>
                         <div class="card-body">
                             <div class="mb-2">
-                                <i class="bi bi-calendar me-1"></i> Uploaded: {{ file.upload_date.strftime('%Y-%m-%d %H:%M') }}
+                                <i class="bi bi-calendar me-1"></i> Uploaded: {{ file.upload_date|date:'Y-m-d H:i' }}
                             </div>
                             <div class="mb-2">
-                                <i class="bi bi-hdd me-1"></i> Size: {{ (file.file_size / 1024)|round(1) }} KB
+                                <i class="bi bi-hdd me-1"></i> Size: {{ file.file_size|filesizeformat }}
                             </div>
                             <div>
                                 <i class="bi bi-person me-1"></i> Owner: 
-                                {% if file.user_id == current_user.id %}
+                                {% if file.user == user %}
                                     You
                                 {% else %}
                                     Shared with you
@@ -64,11 +64,11 @@
                             </div>
                         </div>
                         <div class="card-footer">
-                            <a href="{{ url_for('file_manager.file_details', file_id=file.id) }}" class="btn btn-sm btn-primary">
+                            <a href="{% url 'file_manager:file_details' file.id %}" class="btn btn-sm btn-primary">
                                 <i class="bi bi-info-circle me-1"></i>Details
                             </a>
                             {% if not file.is_malware_detected %}
-                            <a href="{{ url_for('file_manager.download_file', file_id=file.id) }}" class="btn btn-sm btn-success">
+                            <a href="{% url 'file_manager:download_file' file.id %}" class="btn btn-sm btn-success">
                                 <i class="bi bi-download me-1"></i>Download
                             </a>
                             {% endif %}
@@ -101,29 +101,29 @@
                                         {% endif %}
                                         {{ file.original_filename }}
                                     </span>
-                                    <span class="badge {% if file.file_type in ['jpg', 'jpeg', 'png', 'gif'] %}bg-info{% elif file.file_type in ['pdf'] %}bg-danger{% elif file.file_type in ['doc', 'docx'] %}bg-primary{% elif file.file_type in ['xls', 'xlsx'] %}bg-success{% else %}bg-secondary{% endif %}">
+                                    <span class="badge {% if file.file_type in 'jpg,jpeg,png,gif' %}bg-info{% elif file.file_type == 'pdf' %}bg-danger{% elif file.file_type in 'doc,docx' %}bg-primary{% elif file.file_type in 'xls,xlsx' %}bg-success{% else %}bg-secondary{% endif %}">
                                         {{ file.file_type }}
                                     </span>
                                 </div>
                                 <div class="card-body">
                                     <div class="mb-2">
-                                        <i class="bi bi-calendar me-1"></i> Uploaded: {{ file.upload_date.strftime('%Y-%m-%d %H:%M') }}
+                                        <i class="bi bi-calendar me-1"></i> Uploaded: {{ file.upload_date|date:'Y-m-d H:i' }}
                                     </div>
                                     <div class="mb-2">
-                                        <i class="bi bi-hdd me-1"></i> Size: {{ (file.file_size / 1024)|round(1) }} KB
+                                        <i class="bi bi-hdd me-1"></i> Size: {{ file.file_size|filesizeformat }}
                                     </div>
-                                    {% if file.shares|length > 0 %}
+                                    {% if file.shares.count > 0 %}
                                     <div>
-                                        <i class="bi bi-people me-1"></i> Shared with {{ file.shares|length }} user(s)
+                                        <i class="bi bi-people me-1"></i> Shared with {{ file.shares.count }} user(s)
                                     </div>
                                     {% endif %}
                                 </div>
                                 <div class="card-footer">
-                                    <a href="{{ url_for('file_manager.file_details', file_id=file.id) }}" class="btn btn-sm btn-primary">
+                                    <a href="{% url 'file_manager:file_details' file.id %}" class="btn btn-sm btn-primary">
                                         <i class="bi bi-info-circle me-1"></i>Details
                                     </a>
                                     {% if not file.is_malware_detected %}
-                                    <a href="{{ url_for('file_manager.download_file', file_id=file.id) }}" class="btn btn-sm btn-success">
+                                    <a href="{% url 'file_manager:download_file' file.id %}" class="btn btn-sm btn-success">
                                         <i class="bi bi-download me-1"></i>Download
                                     </a>
                                     {% endif %}
@@ -136,7 +136,7 @@
                 <div class="text-center py-4">
                     <i class="bi bi-folder2-open display-4 text-muted mb-3"></i>
                     <p class="lead">You haven't uploaded any files yet.</p>
-                    <a href="{{ url_for('file_manager.upload_file') }}" class="btn btn-primary">
+                    <a href="{% url 'file_manager:upload' %}" class="btn btn-primary">
                         Upload your first file
                     </a>
                 </div>
@@ -152,7 +152,7 @@
         <div class="card-body">
             {% if shared_files %}
                 <div class="row">
-                    {% for file, share in shared_files %}
+                    {% for file in shared_files %}
                         <div class="col-md-4 mb-4">
                             <div class="card h-100">
                                 <div class="card-header d-flex justify-content-between align-items-center">
@@ -162,32 +162,24 @@
                                         {% endif %}
                                         {{ file.original_filename }}
                                     </span>
-                                    <span class="badge {% if file.file_type in ['jpg', 'jpeg', 'png', 'gif'] %}bg-info{% elif file.file_type in ['pdf'] %}bg-danger{% elif file.file_type in ['doc', 'docx'] %}bg-primary{% elif file.file_type in ['xls', 'xlsx'] %}bg-success{% else %}bg-secondary{% endif %}">
+                                    <span class="badge {% if file.file_type in 'jpg,jpeg,png,gif' %}bg-info{% elif file.file_type == 'pdf' %}bg-danger{% elif file.file_type in 'doc,docx' %}bg-primary{% elif file.file_type in 'xls,xlsx' %}bg-success{% else %}bg-secondary{% endif %}">
                                         {{ file.file_type }}
                                     </span>
                                 </div>
                                 <div class="card-body">
                                     <div class="mb-2">
-                                        <i class="bi bi-calendar me-1"></i> Uploaded: {{ file.upload_date.strftime('%Y-%m-%d %H:%M') }}
+                                        <i class="bi bi-calendar me-1"></i> Uploaded: {{ file.upload_date|date:'Y-m-d H:i' }}
                                     </div>
                                     <div class="mb-2">
-                                        <i class="bi bi-person me-1"></i> Owner: {{ file.owner.username }}
-                                    </div>
-                                    <div class="mb-2">
-                                        <i class="bi bi-shield-lock me-1"></i> Access: 
-                                        {% if share.permissions == 'read' %}
-                                            <span class="badge bg-success">Read Only</span>
-                                        {% else %}
-                                            <span class="badge bg-warning">Read & Edit</span>
-                                        {% endif %}
+                                        <i class="bi bi-person me-1"></i> Owner: {{ file.user.username }}
                                     </div>
                                 </div>
                                 <div class="card-footer">
-                                    <a href="{{ url_for('file_manager.file_details', file_id=file.id) }}" class="btn btn-sm btn-primary">
+                                    <a href="{% url 'file_manager:file_details' file.id %}" class="btn btn-sm btn-primary">
                                         <i class="bi bi-info-circle me-1"></i>Details
                                     </a>
                                     {% if not file.is_malware_detected %}
-                                    <a href="{{ url_for('file_manager.download_file', file_id=file.id) }}" class="btn btn-sm btn-success">
+                                    <a href="{% url 'file_manager:download_file' file.id %}" class="btn btn-sm btn-success">
                                         <i class="bi bi-download me-1"></i>Download
                                     </a>
                                     {% endif %}

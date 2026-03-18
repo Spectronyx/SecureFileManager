@@ -10,15 +10,15 @@
                 <h4 class="mb-0"><i class="bi bi-shield-plus me-2"></i>Setup Two-Factor Authentication</h4>
             </div>
             <div class="card-body">
-                {% if current_user.is_2fa_enabled %}
+                {% if user.is_2fa_enabled %}
                     <div class="alert alert-success">
                         <i class="bi bi-shield-check me-2"></i>Two-factor authentication is currently <strong>enabled</strong> for your account.
                     </div>
                     
                     <p>If you want to disable two-factor authentication, please click the button below:</p>
                     
-                    <form action="{{ url_for('auth.disable_2fa') }}" method="POST" class="mt-4">
-                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <form action="{% url 'accounts:disable_2fa' %}" method="POST" class="mt-4">
+                        {% csrf_token %}
                         <div class="d-grid">
                             <button type="submit" class="btn btn-danger" onclick="return confirm('Are you sure you want to disable two-factor authentication? This will reduce the security of your account.')">
                                 <i class="bi bi-shield-slash me-2"></i>Disable Two-Factor Authentication
@@ -54,19 +54,19 @@
                         </div>
                     </div>
                     
-                    <form method="POST" action="{{ url_for('auth.setup_2fa') }}">
-                        {{ form.hidden_tag() }}
+                    <form method="POST" action="{% url 'accounts:setup_2fa' %}">
+                        {% csrf_token %}
                         
                         <div class="mb-3">
-                            <label for="otp_code" class="form-label">{{ form.otp_code.label }}</label>
-                            {{ form.otp_code(class="form-control form-control-lg text-center", id="otp_code", placeholder="000000", autocomplete="off") }}
+                            <label for="{{ form.otp_code.id_for_label }}" class="form-label">{{ form.otp_code.label }}</label>
+                            {{ form.otp_code }}
                             {% for error in form.otp_code.errors %}
                                 <div class="text-danger">{{ error }}</div>
                             {% endfor %}
                         </div>
                         
                         <div class="d-grid gap-2">
-                            {{ form.submit(class="btn btn-primary") }}
+                            <button type="submit" class="btn btn-primary">Enable Two-Factor Authentication</button>
                         </div>
                     </form>
                 {% endif %}
@@ -100,7 +100,7 @@
     
     // Format OTP input
     document.addEventListener('DOMContentLoaded', function() {
-        const otpInput = document.getElementById('otp_code');
+        const otpInput = document.getElementById('id_otp_code') || document.querySelector('input[name="otp_code"]');
         if (otpInput) {
             otpInput.addEventListener('input', function(e) {
                 // Remove non-digit characters
